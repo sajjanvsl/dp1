@@ -219,7 +219,7 @@ y_pred = (y_prob >= THRESHOLD).astype(int)
 acc = accuracy_score(y, y_pred)
 save_accuracy(acc)
 
-st.metric("Ensemble Accuracy", f"{acc*100:.2f}%")
+st.metric("DNN Accuracy", f"{acc*100:.2f}%")
 
 cm = confusion_matrix(y, y_pred)
 fig_cm, ax = plt.subplots()
@@ -279,3 +279,4 @@ Supervisor: <b>Dr. Shitalrani Kavale</b>
 <br>Karnataka State Akkamahadevi Women's University, Vijayapur</b>
 </div>
 """, unsafe_allow_html=True)
+
