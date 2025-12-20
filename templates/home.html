@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> Welcome To Diabetes Prediction</title>
+
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .container-box {
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 10px;
+            background: #ffffff;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 25px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container-box">
+    <h1>Diabetes Prediction</h1>
+
+    <form action="{{ url_for('predict_datapoint') }}" method="post">
+
+        <!-- Age -->
+        <div class="mb-3">
+            <label class="form-label">Age</label>
+            <input type="number" name="Age" class="form-control" placeholder="Enter age in years" required>
+        </div>
+
+        <!-- Gender -->
+        <div class="mb-3">
+            <label class="form-label">Gender</label>
+            <select name="Gender" class="form-select" required>
+                <option value="" disabled selected>Select Gender</option>
+                <option value="1">Male </option>
+                <option value="0">Female </option>
+            </select>
+        </div>
+
+        <!-- Polyuria -->
+        <div class="mb-3">
+            <label class="form-label">Polyuria</label>
+            <select name="Polyuria" class="form-select" required>
+                <option value="" disabled selected>Select</option>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+
+        <!-- Sudden weight loss -->
+        <div class="mb-3">
+            <label class="form-label">Sudden weight loss</label>
+            <select name="Sudden_weight_loss" class="form-select" required>
+                <option value="" disabled selected>Select</option>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+
+        <!-- Polyphagia -->
+        <div class="mb-3">
+            <label class="form-label">Polyphagia</label>
+            <select name="Polyphagia" class="form-select" required>
+                <option value="" disabled selected>Select</option>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+
+        <!-- Visual blurring -->
+        <div class="mb-3">
+            <label class="form-label">Visual blurring</label>
+            <select name="Visual_blurring" class="form-select" required>
+                <option value="" disabled selected>Select</option>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+
+        <!-- Itching -->
+        <div class="mb-3">
+            <label class="form-label">Irritability</label>
+            <select name="Irritability" class="form-select" required>
+                <option value="" disabled selected>Select</option>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+
+        <!-- Delayed healing -->
+        <div class="mb-3">
+            <label class="form-label">Delayed healing</label>
+            <select name="Delayed_healing" class="form-select" required>
+                <option value="" disabled selected>Select</option>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+
+        <!-- Muscle stiffness -->
+        <div class="mb-3">
+            <label class="form-label">Polydipsia</label>
+            <select name="Polydipsia" class="form-select" required>
+                <option value="" disabled selected>Select</option>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+
+        <!-- Obesity -->
+        <div class="mb-3">
+            <label class="form-label">Obesity</label>
+            <select name="Obesity" class="form-select" required>
+                <option value="" disabled selected>Select</option>
+                <option value="1">Yes</option>
+                <option value="0">No</option>
+            </select>
+        </div>
+
+        <div class="text-center">
+            <button type="submit" class="btn btn-primary w-50">Predict</button>
+        </div>
+
+    </form>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<!-- Modal -->
+<div class="modal fade" id="resultModal" tabindex="-1">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header bg-primary text-white">
+        <h5 class="modal-title">Prediction Result</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <h3 class="text-center">{{ result }}</h3>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+{% if result %}
+<script>
+  var resultModal = new bootstrap.Modal(document.getElementById('resultModal'));
+  resultModal.show();
+</script>
+{% endif %}
+
+
+</body>
+</html>
