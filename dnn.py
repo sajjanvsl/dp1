@@ -272,11 +272,12 @@ else:
 st.markdown("""
 <hr>
 <div style='text-align:center'>
-Early Stage Diabetic Prediction using DNN Ensemble<br>
+Early Stage Diabetic Prediction using DNN <br>
 @By <b>Pooja Kallappagol</b>, Research Scholar<br>
 Supervisor: <b>Dr. Shitalrani Kavale</b>
 <br>Dept. of Computer Science
 <br>Karnataka State Akkamahadevi Women's University, Vijayapur</b>
 </div>
 """, unsafe_allow_html=True)
+
 
