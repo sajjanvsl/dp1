@@ -191,5 +191,6 @@ Used only for:
 This app provides AI-assisted predictions and does NOT replace professional medical advice.
 
 ### Contact
-📧 sajjanvsl@gmail.com
+📧 poojakallappagol30@gmail.com
 """)
+
