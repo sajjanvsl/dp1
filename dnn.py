@@ -29,6 +29,9 @@ FEATURES = [
     "Polyphagia","VisualBlurring","Obesity","DelayedHealing","Irritability"
 ]
 
+# ================= TABS =================
+tab1, tab2, tab3 = st.tabs(["🩺 Prediction", "📊 Model Performance", "🔒 Privacy Policy"])
+
 # ================= UTILITIES =================
 def build_dnn(input_dim, seed):
     np.random.seed(seed)
@@ -67,25 +70,21 @@ def generate_pdf(patient, prob, result):
     c.drawString(50, y-10, f"Prediction Result: {result}")
     c.drawString(50, y-30, f"Risk Probability: {prob*100:.2f}%")
 
-    c.drawString(50, 200, "⚠ This is an AI-assisted prediction.")
-    c.drawString(50, 180, "Consult a certified doctor for confirmation.")
-
-    c.drawString(50, 150, f"Generated on: {datetime.now().strftime('%d-%m-%Y %H:%M')}")
+    c.drawString(50, 200, "⚠ AI-assisted prediction.")
+    c.drawString(50, 180, "Consult a certified doctor.")
 
     c.save()
     return file
 
-# ================= TRAIN ENSEMBLE IF NEEDED =================
+# ================= TRAIN MODEL IF NEEDED =================
 if not os.path.exists(f"{MODEL_DIR}/dnn1.h5"):
     st.info("Training Ensemble DNN models...")
-
     df = pd.read_csv(DATA_PATH)
     X = df[FEATURES]
     y = df["class"]
 
     scaler = StandardScaler()
     Xs = scaler.fit_transform(X)
-
     os.makedirs(MODEL_DIR, exist_ok=True)
 
     for i, seed in enumerate([42, 99], start=1):
@@ -102,182 +101,95 @@ dnn1 = load_model(f"{MODEL_DIR}/dnn1.h5")
 dnn2 = load_model(f"{MODEL_DIR}/dnn2.h5")
 scaler = joblib.load(f"{MODEL_DIR}/scaler.pkl")
 
-# ================= UI HEADER =================
-st.markdown("""
-<div style="text-align:center; padding:10px; border-radius:15px; border:2px solid #4CAF50">
-<h3>🩺 Early Stage Diabetes Prediction</h3>
-<p>Deep Neural Network Based Clinical System</p>
-</div>
-""", unsafe_allow_html=True)
+# ============================================================
+# ===================== TAB 1: PREDICTION ====================
+# ============================================================
+with tab1:
+    st.markdown("### 🩺 Early Stage Diabetes Prediction")
 
-st.subheader("🧍 Patient Information")
+    with st.form("patient_form"):
+        Age = st.number_input("Age", 1, 120, 55)
+        Gender = st.radio("Gender", ["Female", "Male"], horizontal=True)
 
-with st.form("patient_form"):
-    Age = st.number_input("Age", 1, 120, 55)
-    Gender = st.radio("Gender", ["Female", "Male"], horizontal=True)
-    col1, col2 = st.columns(2)
-  
-    with col1:
-        
-        
-        Polyuria = st.selectbox("Polyuria", [0, 1])
-        Polydipsia = st.selectbox("Polydipsia", [0, 1])
-        SuddenWeightLoss = st.selectbox("SuddenWeightLoss", [0, 1])
-        Polyphagia = st.selectbox("Polyphagia", [0, 1])
+        col1, col2 = st.columns(2)
+        with col1:
+            Polyuria = st.selectbox("Polyuria", [0, 1])
+            Polydipsia = st.selectbox("Polydipsia", [0, 1])
+            SuddenWeightLoss = st.selectbox("SuddenWeightLoss", [0, 1])
+            Polyphagia = st.selectbox("Polyphagia", [0, 1])
+        with col2:
+            VisualBlurring = st.selectbox("VisualBlurring", [0, 1])
+            Obesity = st.selectbox("Obesity", [0, 1])
+            DelayedHealing = st.selectbox("DelayedHealing", [0, 1])
+            Irritability = st.selectbox("Irritability", [0, 1])
 
-    with col2:
-        
-        VisualBlurring = st.selectbox("VisualBlurring", [0, 1])
-        Obesity = st.selectbox("Obesity", [0, 1])
-        DelayedHealing = st.selectbox("DelayedHealing", [0, 1])
-        Irritability = st.selectbox("Irritability", [0, 1])
+        submit = st.form_submit_button("🔍 Predict")
 
-    colb1, colb2 = st.columns(2)
-    submit = colb1.form_submit_button("🔍 Predict")
-    reset = colb2.form_submit_button("🔄 Reset")
+    if submit:
+        gender_val = 1 if Gender == "Male" else 0
+        X_single = pd.DataFrame([[Age, gender_val, Polyuria, Polydipsia,
+                                  SuddenWeightLoss, Polyphagia, VisualBlurring,
+                                  Obesity, DelayedHealing, Irritability]],
+                                columns=FEATURES)
 
+        Xs = scaler.transform(X_single)
+        prob = (dnn1.predict(Xs)[0][0] + dnn2.predict(Xs)[0][0]) / 2
+        pred = 1 if prob >= THRESHOLD else 0
 
-if reset:
-    st.rerun()
+        st.metric("Risk Probability", f"{prob*100:.2f}%")
+        st.success("Low Risk" if pred == 0 else "High Risk")
 
-# ================= PREDICTION =================
-if submit:
-    gender_val = 1 if Gender == "Male" else 0
+# ============================================================
+# ================= TAB 2: MODEL PERFORMANCE =================
+# ============================================================
+with tab2:
+    st.subheader("📊 Model Performance")
 
-    X_single = pd.DataFrame([[
-        Age, gender_val, Polyuria, Polydipsia, SuddenWeightLoss,
-        Polyphagia, VisualBlurring, Obesity, DelayedHealing, Irritability
-    ]], columns=FEATURES)
+    df = pd.read_csv(DATA_PATH)
+    X = scaler.transform(df[FEATURES])
+    y = df["class"]
 
-    Xs = scaler.transform(X_single)
+    y_prob = (dnn1.predict(X).ravel() + dnn2.predict(X).ravel()) / 2
+    y_pred = (y_prob >= THRESHOLD).astype(int)
 
-    p1 = dnn1.predict(Xs)[0][0]
-    p2 = dnn2.predict(Xs)[0][0]
-    prob = (p1 + p2) / 2
+    acc = accuracy_score(y, y_pred)
+    save_accuracy(acc)
+    st.metric("Accuracy", f"{acc*100:.2f}%")
 
-    pred = 1 if prob >= THRESHOLD else 0
-    result = "DIABETIC" if pred == 1 else "NON-DIABETIC"
+    cm = confusion_matrix(y, y_pred)
+    fig, ax = plt.subplots()
+    ax.imshow(cm)
+    st.pyplot(fig)
 
-    st.subheader("🧾 Prediction Result")
-    st.metric("Risk Probability", f"{prob*100:.2f}%")
+# ============================================================
+# ================= TAB 3: PRIVACY POLICY ====================
+# ============================================================
+with tab3:
+    st.title("🔒 Privacy Policy")
+    st.markdown("""
+**Early Stage Diabetes Prediction App**  
+Effective Date: 25 February 2026
 
-    if pred:
-        st.error("🩺 High Risk of Getting a Diabetic")
-    else:
-        st.success("✅ Low Risk of Getting a Diabetic")
+### Information We Collect
+- Age
+- Gender
+- Clinical symptoms
+- Prediction results
 
-    patient_info = {
-        "Age": Age,
-        "Gender": Gender,
-        "Polyuria": Polyuria,
-        "Polydipsia": Polydipsia,
-        "SuddenWeightLoss": SuddenWeightLoss,
-        "Polyphagia": Polyphagia,
-        "VisualBlurring": VisualBlurring,
-        "Obesity": Obesity,
-        "DelayedHealing": DelayedHealing,
-        "Irritability": Irritability
-    }
+No personal identifiers like name or phone are collected.
 
-    pdf = generate_pdf(patient_info, prob, result)
+### Usage
+Used only for:
+- AI-based prediction
+- Research purposes
 
-    with open(pdf, "rb") as f:
-        st.download_button("⬇ Download Patient PDF Report", f, file_name=pdf)
+### Data Storage
+- No permanent storage
+- No third-party sharing
 
-# ================= DOCTOR FEEDBACK =================
-if submit:
-    st.subheader("👨‍⚕️ Doctor Feedback")
+### Medical Disclaimer
+This app provides AI-assisted predictions and does NOT replace professional medical advice.
 
-    if pred == 1:
-        st.warning(
-            "High risk of Type-2 Diabetes detected.\n\n"
-            "Recommended actions:\n"
-            "- Immediate clinical blood tests (FBS, PPBS, HbA1c)\n"
-            "- Lifestyle modification (diet & exercise)\n"
-            "- Regular glucose monitoring\n"
-            "- Consult an endocrinologist"
-        )
-    else:
-        st.success(
-            "No immediate diabetes risk detected.\n\n"
-            "Recommended actions:\n"
-            "- Maintain balanced diet\n"
-            "- Regular physical activity\n"
-            "- Annual glucose screening"
-        )
-
-# ================= MODEL EVALUATION =================
-st.subheader("📊 Model Performance")
-
-df = pd.read_csv(DATA_PATH)
-X = scaler.transform(df[FEATURES])
-y = df["class"]
-
-y_prob = (dnn1.predict(X).ravel() + dnn2.predict(X).ravel()) / 2
-y_pred = (y_prob >= THRESHOLD).astype(int)
-
-acc = accuracy_score(y, y_pred)
-save_accuracy(acc)
-
-st.metric("DNN Accuracy", f"{acc*100:.2f}%")
-
-cm = confusion_matrix(y, y_pred)
-fig_cm, ax = plt.subplots()
-ax.imshow(cm)
-ax.set_title("Confusion Matrix")
-for i in range(2):
-    for j in range(2):
-        ax.text(j, i, cm[i, j], ha="center", va="center")
-st.pyplot(fig_cm)
-
-fpr, tpr, _ = roc_curve(y, y_prob)
-roc_auc = auc(fpr, tpr)
-fig_roc, ax = plt.subplots()
-ax.plot(fpr, tpr, label=f"AUC = {roc_auc:.2f}")
-ax.plot([0, 1], [0, 1], "--")
-ax.legend()
-st.pyplot(fig_roc)
-
-
-# ================= ACCURACY HISTORY =================
-st.subheader("📈 Accuracy History")
-
-if os.path.exists(ACC_LOG):
-    log = pd.read_csv(ACC_LOG)
-
-    # ---- HANDLE TIME COLUMN SAFELY ----
-    if "timestamp" not in log.columns:
-        if "time" in log.columns:
-            log.rename(columns={"time": "timestamp"}, inplace=True)
-        else:
-            log["timestamp"] = pd.date_range(
-                start=datetime.now(),
-                periods=len(log),
-                freq="min"
-            )
-
-    log["timestamp"] = pd.to_datetime(log["timestamp"], errors="coerce")
-    log = log.dropna(subset=["timestamp"])
-
-    if "accuracy" in log.columns:
-        st.line_chart(log.set_index("timestamp")["accuracy"])
-    else:
-        st.warning("⚠ Accuracy column not found in log file")
-else:
-    st.info("ℹ️ Accuracy history will appear after first evaluation")
-
-
-
-# ================= FOOTER =================
-st.markdown("""
-<hr>
-<div style='text-align:center'>
-Early Stage Diabetic Prediction using DNN <br>
-@By <b>Pooja Kallappagol</b>, Research Scholar<br>
-Supervisor: <b>Dr. Shitalrani Kavale</b>
-<br>Dept. of Computer Science
-<br>Karnataka State Akkamahadevi Women's University, Vijayapur</b>
-</div>
-""", unsafe_allow_html=True)
-
-
+### Contact
+📧 sajjanvsl@gmail.com
+""")
