@@ -16,12 +16,16 @@ import matplotlib.pyplot as plt
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 
-
 # ================= CONFIG =================
-st.set_page_config(page_title="Early Stage Diabetes Prediction", layout="centered")
+st.set_page_config(page_title="Diabetes Risk Assessment", layout="centered")
 
 # ===== TOP NAVIGATION =====
-tab1, tab2 = st.tabs(["🩺 Prediction System", "🔐 Privacy Policy"])
+tab1, tab2, tab3, tab4 = st.tabs([
+    "🩺 Risk Assessment",
+    "🔐 Privacy Policy",
+    "🗑 Data Deletion",
+    "ℹ️ About & Disclaimer"
+])
 
 DATA_PATH = "data/diabetes.csv"
 MODEL_DIR = "model"
@@ -32,7 +36,6 @@ FEATURES = [
     "Age","Gender","Polyuria","Polydipsia","SuddenWeightLoss",
     "Polyphagia","VisualBlurring","Obesity","DelayedHealing","Irritability"
 ]
-
 
 # ================= UTILITIES =================
 def build_dnn(input_dim, seed):
@@ -59,11 +62,11 @@ def save_accuracy(acc):
 
 
 def generate_pdf(patient, prob, result):
-    file = "Patient_Diabetes_Report.pdf"
+    file = "Patient_Risk_Report.pdf"
     c = canvas.Canvas(file, pagesize=A4)
 
     c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(300, 800, "Early Stage Diabetes Medical Report")
+    c.drawCentredString(300, 800, "AI-Based Diabetes Risk Assessment Report")
 
     c.setFont("Helvetica", 11)
     y = 760
@@ -71,17 +74,17 @@ def generate_pdf(patient, prob, result):
         c.drawString(50, y, f"{k}: {v}")
         y -= 18
 
-    c.drawString(50, y-10, f"Prediction Result: {result}")
+    c.drawString(50, y-10, f"Risk Category: {result}")
     c.drawString(50, y-30, f"Risk Probability: {prob*100:.2f}%")
 
-    c.drawString(50, 200, "This is an AI-assisted prediction.")
-    c.drawString(50, 180, "Consult a certified doctor for confirmation.")
+    c.drawString(50, 200, "This is an AI-based risk estimation tool.")
+    c.drawString(50, 180, "It does NOT provide medical diagnosis.")
+    c.drawString(50, 160, "Consult a certified healthcare professional.")
 
-    c.drawString(50, 150, f"Generated on: {datetime.now().strftime('%d-%m-%Y %H:%M')}")
+    c.drawString(50, 130, f"Generated on: {datetime.now().strftime('%d-%m-%Y %H:%M')}")
 
     c.save()
     return file
-
 
 # ================= TRAIN MODEL IF NEEDED =================
 if not os.path.exists(f"{MODEL_DIR}/dnn1.h5"):
@@ -104,27 +107,26 @@ if not os.path.exists(f"{MODEL_DIR}/dnn1.h5"):
 
     joblib.dump(scaler, f"{MODEL_DIR}/scaler.pkl")
 
-
 # ================= LOAD MODELS =================
 dnn1 = load_model(f"{MODEL_DIR}/dnn1.h5")
 dnn2 = load_model(f"{MODEL_DIR}/dnn2.h5")
 scaler = joblib.load(f"{MODEL_DIR}/scaler.pkl")
-
 
 # ==========================================================
 # ===================== TAB 1 ==============================
 # ==========================================================
 with tab1:
 
-    # ================= HEADER =================
     st.markdown("""
     <div style="text-align:center; padding:10px; border-radius:15px; border:2px solid #4CAF50">
-    <h3>🩺 Early Stage Diabetes Prediction</h3>
-    <p>Deep Neural Network Based Clinical System</p>
+    <h3>🩺 AI Diabetes Risk Assessment</h3>
+    <p>Deep Neural Network Based Screening Tool</p>
     </div>
     """, unsafe_allow_html=True)
 
-    st.subheader("🧍 Patient Information")
+    st.warning("⚠️ This tool provides AI-based risk estimation and is NOT a medical diagnosis.")
+
+    st.subheader("🧍 Patient Inputs")
 
     with st.form("patient_form"):
         Age = st.number_input("Age", 1, 120, 55)
@@ -145,18 +147,17 @@ with tab1:
             Irritability = st.selectbox("Irritability", [0, 1])
 
         colb1, colb2 = st.columns(2)
-        submit = colb1.form_submit_button("🔍 Predict")
+        submit = colb1.form_submit_button("🔍 Assess Risk")
         reset = colb2.form_submit_button("🔄 Reset")
 
     if reset:
         st.rerun()
 
-    # ================= PREDICTION =================
     if submit:
 
         gender_val = 1 if Gender == "Male" else 0
 
-        X_single = pd.DataFrame([[
+        X_single = pd.DataFrame([[ 
             Age, gender_val, Polyuria, Polydipsia, SuddenWeightLoss,
             Polyphagia, VisualBlurring, Obesity, DelayedHealing, Irritability
         ]], columns=FEATURES)
@@ -168,15 +169,15 @@ with tab1:
         prob = (p1 + p2) / 2
 
         pred = 1 if prob >= THRESHOLD else 0
-        result = "DIABETIC" if pred == 1 else "NON-DIABETIC"
+        result = "Higher Risk" if pred == 1 else "Lower Risk"
 
-        st.subheader("🧾 Prediction Result")
+        st.subheader("🧾 Result")
         st.metric("Risk Probability", f"{prob*100:.2f}%")
 
         if pred:
-            st.error("🩺 High Risk of Getting a Diabetic")
+            st.warning("⚠️ Higher Risk Pattern Detected (Not a Diagnosis)")
         else:
-            st.success("✅ Low Risk of Getting a Diabetic")
+            st.success("✅ Lower Risk Pattern Detected")
 
         patient_info = {
             "Age": Age,
@@ -194,7 +195,7 @@ with tab1:
         pdf = generate_pdf(patient_info, prob, result)
 
         with open(pdf, "rb") as f:
-            st.download_button("⬇ Download Patient PDF Report", f, file_name=pdf)
+            st.download_button("⬇ Download Risk Report", f, file_name=pdf)
 
     # ================= MODEL PERFORMANCE =================
     st.subheader("📊 Model Performance")
@@ -209,88 +210,86 @@ with tab1:
     acc = accuracy_score(y, y_pred)
     save_accuracy(acc)
 
-    st.metric("DNN Accuracy", f"{acc*100:.2f}%")
-
-    cm = confusion_matrix(y, y_pred)
-    fig_cm, ax = plt.subplots()
-    ax.imshow(cm)
-    ax.set_title("Confusion Matrix")
-    for i in range(2):
-        for j in range(2):
-            ax.text(j, i, cm[i, j], ha="center", va="center")
-    st.pyplot(fig_cm)
-
-    fpr, tpr, _ = roc_curve(y, y_prob)
-    roc_auc = auc(fpr, tpr)
-    fig_roc, ax = plt.subplots()
-    ax.plot(fpr, tpr, label=f"AUC = {roc_auc:.2f}")
-    ax.plot([0, 1], [0, 1], "--")
-    ax.legend()
-    st.pyplot(fig_roc)
-
-    # ================= FOOTER =================
-    st.markdown("""
-    <hr>
-    <div style='text-align:center'>
-    Early Stage Diabetic Prediction using DNN <br>
-    @By <b>Pooja Kallappagol</b>, Research Scholar<br>
-    Supervisor: <b>Dr. Shitalrani Kavale</b><br>
-    Dept. of Computer Science<br>
-    Karnataka State Akkamahadevi Women's University, Vijayapur
-    </div>
-    """, unsafe_allow_html=True)
-
+    st.metric("Model Accuracy", f"{acc*100:.2f}%")
 
 # ==========================================================
 # ===================== TAB 2 ==============================
 # ==========================================================
 with tab2:
-
     st.title("🔐 Privacy Policy")
 
     st.markdown("""
 **Effective Date: 2026**
 
-This application is developed for academic and research purposes.
+This application is developed for academic and research purposes only.
 
 ---
 
-### Information Collection
+### Information We Collect
 This app collects:
 - Age
 - Gender
-- Clinical symptom inputs
+- Symptom inputs
 
-It does NOT collect:
+This app does NOT collect:
 - Name
 - Phone number
 - Email
-- Location data
+- Location
+- Device ID
 
 ---
 
 ### Data Usage
-User inputs are used only for:
-- AI-based diabetes risk prediction
-
-No personal data is sold, shared, or used for advertising.
+Inputs are processed locally for AI-based risk estimation.
+No data is sold, shared, or used for advertising.
 
 ---
 
 ### Data Storage
-- No personal data is permanently stored.
-- Accuracy logs contain only model performance metrics.
+No personal data is permanently stored.
 
 ---
 
 ### Medical Disclaimer
-This system provides AI-assisted prediction only.
+This app provides risk estimation only.
 It does NOT replace professional medical advice.
-Always consult a qualified healthcare provider.
+""")
 
----
+# ==========================================================
+# ===================== TAB 3 ==============================
+# ==========================================================
+with tab3:
+    st.title("🗑 Data Deletion")
 
-### Contact
-Dept. of Computer Science  
+    st.markdown("""
+This app does not create user accounts and does not store personal data.
+
+If you wish to request confirmation of data deletion:
+
+📧 Email: sajjanvsl@gmail.com  
+Subject: Data Deletion Request
+
+All temporary session data is automatically cleared after use.
+""")
+
+# ==========================================================
+# ===================== TAB 4 ==============================
+# ==========================================================
+with tab4:
+    st.title("ℹ️ About & Disclaimer")
+
+    st.markdown("""
+### Purpose
+AI-based diabetes risk screening tool for academic research.
+
+### Important Notice
+- Not a diagnostic tool
+- Provides probability-based estimation only
+- Consult a licensed doctor for medical advice
+
+### Developer
+Pooja Kallappagol  
+Research Scholar  
 Karnataka State Akkamahadevi Women's University, Vijayapur
 """)
