@@ -267,7 +267,7 @@ This app does not create user accounts and does not store personal data.
 
 If you wish to request confirmation of data deletion:
 
-📧 Email: sajjanvsl@gmail.com  
+📧 Email: poojakallappagol30@gmail.com
 Subject: Data Deletion Request
 
 All temporary session data is automatically cleared after use.
